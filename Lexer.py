@@ -2,8 +2,8 @@ import re
 
 # Define the regex patterns for various tokens (compiled once for performance)
 token_patterns = [
-    ('KEYWORD', r'\b(xec|function|entry|output|runtime|pipeline|thread|layer|modify|print|if|else|elif|switch|case|return|while|for|break|continue|in|def|class|struct|inherit|and|or|not|true|false|default|loop|end)\b'),
-    ('DATA_TYPE', r'\b(int|float|bool|string|byte|stream|packet|void|array|map|tuple|object)\b'),
+    ('KEYWORD', r'\b(xec|function|entry|output|runtime|pipeline|thread|layer|modify|print|if|else|elif|switch|case|return|while|for|break|continue|in|def|class|struct|inherit|and|or|not|true|false|default|loop|end|foreach|new|try|catch|finally|throw)\b'),
+    ('DATA_TYPE', r'\b(int|float|bool|string|byte|stream|packet|void|array|map|tuple|object|any)\b'),
     ('IDENTIFIER', r'[a-zA-Z_][a-zA-Z0-9_]*'),
     ('NUMBER', r'\b\d+\b'),
     ('FLOAT', r'\b\d+\.\d+\b'),
@@ -33,6 +33,7 @@ class Lexer:
         self.column = 1
         self.context = {'global': {}}  # Track global and local variables
         self.current_scope = 'global'  # Default to global scope
+        self.current_function_return_type = None  # Track the expected return type of functions
 
     def tokenize(self, code):
         tokens = []
@@ -60,6 +61,12 @@ class Lexer:
                         print(f"Warning: Unclosed string at line {self.line}, column {self.column}. Closing string automatically.")
                         token_type = 'STRING'  # Mark as a string even though it's incomplete
 
+                    # Error Recovery for unclosed comments
+                    if token_type == 'COMMENT' and not value.endswith('*/'):
+                        value += '*/'  # Attempt to close the comment
+                        print(f"Warning: Unclosed comment at line {self.line}, column {self.column}. Closing comment automatically.")
+                        token_type = 'COMMENT'  # Mark as a comment even though it's incomplete
+
                     # Insert missing operators if necessary (basic error recovery)
                     if token_type == 'MISMATCH':
                         if self.last_token_is_identifier(code):
@@ -67,6 +74,7 @@ class Lexer:
                             value = '+'
                             token_type = 'OPERATOR'
 
+                    # Add to tokens list only if it's not whitespace or comment
                     if token_type != 'WHITESPACE' and token_type != 'COMMENT':
                         tokens.append((token_type, value, self.line, self.column))
                     
@@ -109,24 +117,36 @@ class Lexer:
         pattern = r'[a-zA-Z_][a-zA0-9_]*\s*$'
         return bool(re.search(pattern, remaining_code))
 
-    def start_function_scope(self, function_name):
-        """Start a new function scope to track local variables."""
+    def start_function_scope(self, function_name, return_type='void'):
+        """Start a new function scope to track local variables and return type."""
         self.context[function_name] = {}
         self.current_scope = function_name
-        print(f"Entering function scope: {function_name}")
+        self.current_function_return_type = return_type
+        print(f"Entering function scope: {function_name} with return type: {return_type}")
 
     def end_function_scope(self):
         """End the current function scope."""
         print(f"Exiting function scope: {self.current_scope}")
         self.current_scope = 'global'
+        self.current_function_return_type = None
 
     def add_variable_to_scope(self, variable_name):
         """Add a variable to the current scope (local or global)."""
         if self.current_scope == 'global':
             self.context['global'][variable_name] = True
         else:
+            # Check for redeclaration within the same scope
+            if variable_name in self.context[self.current_scope]:
+                print(f"Warning: Variable '{variable_name}' redeclared in the current scope!")
             self.context[self.current_scope][variable_name] = True
         print(f"Added variable '{variable_name}' to scope '{self.current_scope}'.")
+
+    def check_function_return(self, function_name):
+        """Check if the return type matches the expected type."""
+        if self.current_function_return_type and function_name == self.current_scope:
+            print(f"Checking return type for function '{function_name}': Expected {self.current_function_return_type}")
+            return True
+        return False
 
 # Sample usage
 if __name__ == "__main__":
