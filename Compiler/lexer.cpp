@@ -2,6 +2,7 @@
 #include <vector>
 #include <regex>
 #include <map>
+#include <cctype>
 
 enum class TokenType {
     KEYWORD,
@@ -11,6 +12,11 @@ enum class TokenType {
     OPERATOR,
     SYMBOL,
     COMMENT,
+    TYPE,
+    STRUCT,
+    ENUM,
+    TUPLE,
+    ARRAY,
     EOF_TOKEN,
     ERROR
 };
@@ -39,6 +45,8 @@ public:
                 tokens.push_back(handleString());
             } else if (currentChar == '/' && source[position + 1] == '/') {
                 tokens.push_back(handleComment());
+            } else if (currentChar == '/' && source[position + 1] == '*') {
+                tokens.push_back(handleMultiLineComment());
             } else if (isOperator(currentChar)) {
                 tokens.push_back(handleOperator());
             } else if (isSymbol(currentChar)) {
@@ -60,7 +68,8 @@ private:
     const std::map<std::string, TokenType> keywords = {
         {"if", TokenType::KEYWORD}, {"else", TokenType::KEYWORD}, {"while", TokenType::KEYWORD},
         {"return", TokenType::KEYWORD}, {"int", TokenType::KEYWORD}, {"float", TokenType::KEYWORD},
-        {"bool", TokenType::KEYWORD}, {"char", TokenType::KEYWORD}, {"void", TokenType::KEYWORD}
+        {"bool", TokenType::KEYWORD}, {"char", TokenType::KEYWORD}, {"void", TokenType::KEYWORD},
+        {"struct", TokenType::STRUCT}, {"enum", TokenType::ENUM}, {"tuple", TokenType::TUPLE}, {"array", TokenType::ARRAY}
     };
 
     void handleWhitespace(char &currentChar, std::vector<Token> &tokens) {
@@ -79,7 +88,6 @@ private:
             column++;
         }
         std::string value = source.substr(start, position - start);
-        // Check if it's a keyword
         if (keywords.find(value) != keywords.end()) {
             return {TokenType::KEYWORD, value, line, column};
         }
@@ -89,11 +97,24 @@ private:
     Token handleNumber() {
         int start = position;
         bool isFloat = false;
-        while (isdigit(source[position]) || source[position] == '.') {
-            if (source[position] == '.') isFloat = true;
+        bool isHex = false;
+        bool isBinary = false;
+
+        if (source[position] == '0' && (source[position + 1] == 'x' || source[position + 1] == 'b')) {
+            // Hexadecimal or binary number
+            isHex = (source[position + 1] == 'x');
+            isBinary = (source[position + 1] == 'b');
+            position += 2;
+            column += 2;
+        }
+
+        while (isdigit(source[position]) || source[position] == '.' || 
+               (isHex && (isxdigit(source[position]))) || 
+               (isBinary && (source[position] == '0' || source[position] == '1'))) {
             position++;
             column++;
         }
+
         std::string value = source.substr(start, position - start);
         return {TokenType::NUMBER, value, line, column};
     }
@@ -122,10 +143,28 @@ private:
         return {TokenType::COMMENT, source.substr(start, position - start), line, column};
     }
 
+    Token handleMultiLineComment() {
+        int start = position;
+        position += 2;
+        column += 2;  // Skip /*
+
+        while (position < source.size() && !(source[position] == '*' && source[position + 1] == '/')) {
+            position++;
+            column++;
+        }
+
+        if (position < source.size()) {
+            position += 2;  // Skip */
+            column += 2;
+        }
+        return {TokenType::COMMENT, source.substr(start, position - start), line, column};
+    }
+
     bool isOperator(char currentChar) {
         return currentChar == '+' || currentChar == '-' || currentChar == '*' || currentChar == '/' ||
                currentChar == '=' || currentChar == '<' || currentChar == '>' || currentChar == '&' ||
-               currentChar == '|' || currentChar == '!' || currentChar == '%' || currentChar == '^';
+               currentChar == '|' || currentChar == '!' || currentChar == '%' || currentChar == '^' ||
+               currentChar == '?' || currentChar == ':';
     }
 
     Token handleOperator() {
@@ -133,7 +172,7 @@ private:
         std::string op(1, currentChar);
         position++;
         column++;
-        // Handle two-character operators (e.g., ==, <=, etc.)
+        // Handle two-character operators (e.g., ==, <=, &&)
         if ((currentChar == '=' || currentChar == '<' || currentChar == '>' || currentChar == '&' || currentChar == '|') && 
             position < source.size() && (source[position] == '=' || source[position] == currentChar)) {
             op += source[position];
@@ -167,11 +206,18 @@ private:
 int main() {
     // Sample input source code
     std::string sourceCode = R"(int main() {
-        int x = 10;
-        if (x == 10) {
+        struct Person {
+            string name;
+            int age;
+        };
+
+        Person p = { "John", 30 };
+        if (p.age > 18) {
             return 1;
         }
+
         // This is a comment
+        /* This is a multi-line comment */
     })";
 
     // Create Lexer instance and tokenize the input
@@ -189,6 +235,10 @@ int main() {
             case TokenType::OPERATOR: tokenType = "OPERATOR"; break;
             case TokenType::SYMBOL: tokenType = "SYMBOL"; break;
             case TokenType::COMMENT: tokenType = "COMMENT"; break;
+            case TokenType::STRUCT: tokenType = "STRUCT"; break;
+            case TokenType::ENUM: tokenType = "ENUM"; break;
+            case TokenType::TUPLE: tokenType = "TUPLE"; break;
+            case TokenType::ARRAY: tokenType = "ARRAY"; break;
             case TokenType::ERROR: tokenType = "ERROR"; break;
             case TokenType::EOF_TOKEN: tokenType = "EOF_TOKEN"; break;
         }
