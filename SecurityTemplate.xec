@@ -1,0 +1,64 @@
+// main.xec
+// XecLang++ Entry Point
+
+// Importing necessary libraries for cryptography and utilities
+import crypto;
+import util;
+
+// Constants
+const secretKey = "MySecretKey";  // A key for encryption/decryption (ideally, should be stored securely)
+
+// Main Program
+function main() {
+    // Displaying a welcome message
+    print("Welcome to the XecLang++ Secure Application!");
+
+    // Sample data to encrypt
+    let sensitiveData = "This is some highly sensitive information.";
+
+    // Encrypting the sensitive data
+    let encryptedData = encryptData(sensitiveData, secretKey);
+    print("Encrypted Data: " + encryptedData);
+
+    // Decrypting the sensitive data
+    let decryptedData = decryptData(encryptedData, secretKey);
+    print("Decrypted Data: " + decryptedData);
+
+    // Handling user input for further interaction
+    print("Please enter your username: ");
+    let username = readLine();  // Securely handle user input
+
+    // Verifying user input (example: basic access control check)
+    if (username == "admin") {
+        print("Access granted. Welcome, Admin!");
+    } else {
+        print("Access denied. Invalid user.");
+    }
+
+    // Perform a final cleanup or logout if necessary
+    logout();
+}
+
+// Function to encrypt sensitive data
+function encryptData(data, key) {
+    // Using the built-in cryptography functions to encrypt data
+    let encrypted = crypto.encryptAES(data, key);
+    return encrypted;
+}
+
+// Function to decrypt sensitive data
+function decryptData(encryptedData, key) {
+    // Using the built-in cryptography functions to decrypt data
+    let decrypted = crypto.decryptAES(encryptedData, key);
+    return decrypted;
+}
+
+// Function to securely log out or clean up sensitive data
+function logout() {
+    // Clear any sensitive data from memory
+    util.clearMemory();
+    print("Logged out successfully. All sensitive data has been wiped.");
+}
+
+// Run the program
+main();
