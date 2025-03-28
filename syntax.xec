@@ -1,0 +1,11 @@
+// hello_world.xec
+// XecLang++ Hello World Program
+
+// Main function
+function main() {
+    // Print a welcome message to the console
+    print("Hello, World!");
+}
+
+// Run the program
+main();
