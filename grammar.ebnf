@@ -1,0 +1,171 @@
+// Keywords
+KEYWORDS: 'xec' | 'function' | 'entry' | 'output' | 'runtime' | 'pipeline' | 'thread' | 'layer' | 'modify' | 'print' | 'if' | 'else' | 'return' | 'end';
+
+// Data Types
+DATA_TYPES: 'int' | 'float' | 'bool' | 'string' | 'byte' | 'stream' | 'packet' | 'void' | 'array' | 'map' | 'tuple' | 'object';
+
+// Operators
+OPERATORS: '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<' | '>' | '<=' | '>=' | '&&' | '||' | '=' | '+=';
+
+// Delimiters
+DELIMITERS: '{' | '}' | '(' | ')' | '[' | ']' | ',' | ';' | ':' | '.';
+
+// Identifiers
+IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
+
+// Literals
+LITERALS: [0-9]+ | '"[^"]*"';
+
+// Comments
+COMMENTS: '//' [^\n]* | '/*' .*? '*/';
+
+// Whitespace
+WHITESPACE: [ \t\r\n]+;
+
+program: statement+;
+
+statement:
+    function_definition
+    | expression_statement
+    | variable_declaration
+    | if_statement
+    | return_statement
+    | print_statement
+    | function_call
+    ;
+
+function_definition:
+    'function' IDENTIFIER '(' parameter_list? ')' '{' statement+ '}';
+
+parameter_list:
+    IDENTIFIER (',' IDENTIFIER)*;
+
+variable_declaration:
+    DATA_TYPES IDENTIFIER ('=' expression)?;
+
+expression_statement:
+    expression;
+
+if_statement:
+    'if' expression '{' statement+ '}' ('else' '{' statement+ '}')?;
+
+return_statement:
+    'return' expression? ';';
+
+print_statement:
+    'print' '(' expression ')';
+
+function_call:
+    IDENTIFIER '(' argument_list? ')';
+
+argument_list:
+    expression (',' expression)*;
+
+expression:
+    literal
+    | IDENTIFIER
+    | function_call
+    | binary_expression
+    | unary_expression
+    | parenthesized_expression
+    ;
+
+binary_expression:
+    expression operator expression;
+
+unary_expression:
+    operator expression;
+
+parenthesized_expression:
+    '(' expression ')';
+
+operator:
+    '+' | '-' | '*' | '/' | '==' | '!=' | '<' | '>' | '<=' | '>=' | '&&' | '||' | '=' | '+=';
+
+literal:
+    [0-9]+  // Integer literals
+    | '"' [^"]* '"'  // String literals
+    ;
+
+type:
+    DATA_TYPES
+    | IDENTIFIER  // For user-defined types
+    | array_type
+    | map_type
+    | tuple_type;
+
+array_type:
+    'array' '[' type ']';
+
+map_type:
+    'map' '[' type ',' type ']';
+
+tuple_type:
+    'tuple' '(' type (',' type)* ')';
+
+if_statement:
+    'if' expression '{' statement+ '}' ('else' '{' statement+ '}')?;
+
+loop_statement:
+    'for' IDENTIFIER 'in' expression '{' statement+ '}'
+    | 'while' expression '{' statement+ '}';
+
+function_definition:
+    'function' IDENTIFIER '(' parameter_list? ')' '{' statement+ '}';
+
+parameter_list:
+    IDENTIFIER (',' IDENTIFIER)*;
+
+type_inference:
+    IDENTIFIER '=' expression;
+
+pipeline:
+    'pipeline' '{' statement* '}';
+
+entry:
+    'entry' ':' DATA_TYPES IDENTIFIER;
+
+runtime_block:
+    'runtime' '{' statement+ '}';
+
+statement_in_pipeline:
+    expression | function_call | assignment;
+
+assignment:
+    IDENTIFIER '=' expression;
+
+allocation:
+    'allocate' IDENTIFIER 'as' DATA_TYPES;
+
+deallocate:
+    'deallocate' IDENTIFIER;
+
+concurrency:
+    'threads' '(' 'max' '=' INTEGER ')' '{' statement+ '}';
+
+osi_layer_interaction:
+    'layer' '(' 'OSI_LAYER_' INTEGER ')' '{' statement+ '}';
+
+program:
+    function_definition*
+    | statement+
+    ;
+
+function_definition:
+    'function' IDENTIFIER '(' parameter_list? ')' '{' statement+ '}';
+
+statement:
+    function_call
+    | variable_declaration
+    | if_statement
+    | expression_statement
+    | return_statement
+    ;
+
+expression:
+    IDENTIFIER
+    | literal
+    | binary_expression
+    | function_call
+    | parenthesized_expression;
+
